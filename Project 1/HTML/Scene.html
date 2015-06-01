@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>MyScene</title>
+    <!-- <link rel="stylesheet" href="../css/webglbook.css" /> -->
+    <script src="../Javascript/Three.js"></script>
+    <!-- // <script src="../libs/RequestAnimationFrame.js"></script> -->
+    <script>
+    var renderer = null,
+        scene = null,
+        camera = null,
+        group = null,
+        cameraGroup = null,
+    animating = false,
+    left = false,
+    right = false,
+    up = false,
+    down = false,
+    forward = false,
+    back = false,
+    mainFighter = null,
+    speed = 1;
+    rotateXLeft = false;
+    rotateXRight = false;
+    rotateYLeft = false;
+    rotateYRight = false;
+    rotateZLeft = false;
+    rotateZRight = false;
+    
+
+function onLoad()
+{
+    // Grab our container div
+    var container = document.getElementById("container");
+    // Create the Three.js renderer, add it to our div
+    renderer = new THREE.WebGLRenderer( { antialias: true } );
+    renderer.setSize(container.offsetWidth, container.offsetHeight);
+    container.appendChild( renderer.domElement );
+    // Create a new Three.js scene
+    scene = new THREE.Scene();
+    // Put in a camera
+    camera = new THREE.PerspectiveCamera( 45,
+        container.offsetWidth / container.offsetHeight, 1, 100000 );
+    camera.position.set( 0, 0, 200 );
+    // Create a directional light to show off the object
+    var light = new THREE.DirectionalLight( 0xffffff, 1.5);
+    light.position.set(0, 0, 1);
+    scene.add( light );
+
+    var lightAm = new THREE.AmbientLight( 0xffffff, 1.5);
+    // light.position.set(0, 0, 1);
+    scene.add( lightAm );
+
+
+    var mapUrlWings = "../Images/metal1.jpg";
+    var mapWings = THREE.ImageUtils.loadTexture(mapUrlWings);
+    // Now, create a Phong material to show shading; pass in the map
+    var material1 = new THREE.MeshPhongMaterial({ map: mapWings });
+
+
+// textures and geometry
+    var mapUrlBody = "../Images/body2.jpg";
+    var mapBody = THREE.ImageUtils.loadTexture(mapUrlBody);
+    // Now, create a Phong material to show shading; pass in the map
+    var material2 = new THREE.MeshPhongMaterial({ map: mapBody });
+    // Create the cube geometry
+    var geometry = new THREE.SphereGeometry(5, 32, 32);
+
+    var cylinder = new THREE.CylinderGeometry(2,2,5);
+
+    var wingGeo = new THREE.BoxGeometry(2,20,20);
+
+    group = new THREE.Object3D();
+    cameraGroup = new THREE.Object3D();
+
+// create the swarm of fighters
+for (var i = 1 ; i <50; i++) {
+   
+
+    var body = new THREE.Mesh(geometry, material2);
+    var cylinder1 = new THREE.Mesh(cylinder, material1);
+    var cylinder2 = new THREE.Mesh(cylinder, material1);
+    var wing1 = new THREE.Mesh(wingGeo, material1);
+    var wing2 = new THREE.Mesh(wingGeo, material1);
+
+    var fighter =  new THREE.Object3D();
+
+    cylinder1.translateX(-7)
+    cylinder2.translateX(7);
+    wing1.translateX(10);
+    wing2.translateX(-10);
+
+    cylinder1.rotation.z += 1.57;
+    cylinder2.rotation.z += 1.57;
+    body.rotation.y-=1.57;
+
+    fighter.add(body);
+    fighter.add(cylinder1);
+    fighter.add(cylinder2);
+    fighter.add(wing1);
+    fighter.add(wing2);
+
+    if(i<49){
+        fighter.translateX(Math.random()*1000 );
+        fighter.translateY(Math.random()*1000 );
+        fighter.translateZ(Math.random()*1000 );
+        group.add(fighter);
+    }
+    if(i==49){
+        cameraGroup.position.x = camera.position.x;
+        cameraGroup.position.y = camera.position.y;
+        cameraGroup.position.z = camera.position.z;
+        fighter.rotation.y+=3.14;
+        fighter.translateZ(camera.position.z-60);
+        cameraGroup.add(fighter);
+        scene.add(cameraGroup);
+    }
+};
+
+    // Add the cube to our scene
+    scene.add( group );
+
+
+    // adding the sky
+    var geometry = new THREE.SphereGeometry(10000, 60, 40);
+    var uniforms = {
+      texture: { type: 't', value: THREE.ImageUtils.loadTexture('../Images/sky3.jpg') }
+    };
+
+    var material = new THREE.ShaderMaterial( {
+      uniforms:       uniforms,
+      vertexShader:   document.getElementById("stars-vertex").textContent,
+      fragmentShader: document.getElementById('stars-fragment').textContent
+    });
+
+    skyBox = new THREE.Mesh(geometry, material);
+    skyBox.scale.set(-1, 1, 1);
+    skyBox.rotationOrder = 'XZY';
+    skyBox.renderDepth = 10000.0;
+    scene.add(skyBox);
+    keypress();
+    animating = true;
+    prevY = 0;
+    // Run our render loop
+run(); 
+}
+function run()
+    {
+        // Render the scene
+        renderer.render( scene, camera );
+        // Spin the cube for next frame
+        if (animating)
+        {
+
+
+
+            cameraGroup.position.x = camera.position.x;
+            cameraGroup.position.y = camera.position.y;
+            cameraGroup.position.z = camera.position.z;
+
+            group.rotation.y -= 0.005;
+            group.rotation.x += Math.sin(.005);
+
+
+            // console.log(camera.rotation.x % Math.PI*2)
+
+
+
+            // group.rotation.z +=0.01;
+        }
+
+        // logic for controls and camera rotation
+        var speedLocal = .5*speed
+        if(left){
+            camera.position.x -= speedLocal; 
+        }
+        if(right){
+            camera.position.x += speedLocal; 
+        }
+        if(up){
+            camera.position.y += speedLocal; 
+        }
+        if(down){
+            camera.position.y -= speedLocal; 
+        }
+        if(forward){
+            camera.position.z += speedLocal; 
+        }
+        if(back){
+            camera.position.z -= speedLocal; 
+        }
+
+        if(rotateXLeft){
+            camera.rotation.x -= .001*speedLocal; 
+        }
+        if(rotateXRight){
+            camera.rotation.x += .001*speedLocal; 
+        }
+
+        if(rotateYLeft){
+            camera.rotation.y -= .001*speedLocal; 
+        }
+        if(rotateYRight){
+            camera.rotation.y += .001*speedLocal; 
+        }
+
+        if(rotateZLeft){
+            camera.rotation.z -= .001*speedLocal; 
+        }
+        if(rotateZRight){
+            camera.rotation.z += .001*speedLocal; 
+        }
+
+
+        // Ask for another frame
+        requestAnimationFrame(run);
+    }
+    // adds the event listener
+    function keypress()
+    {
+        window.addEventListener( "keypress", onkeydown, false);
+    }
+
+    function onkeydown(event)
+    {
+        var code = event.keyCode;
+// directions for moving camera
+// go up
+        if(code == 119){
+          up = !up;
+          down = false;
+        }
+        // go down
+        if(code == 115){
+          down = !down;
+          up = false;
+        }
+// go right
+        if(code == 100){
+          right = !right;
+          left = false;
+        }
+        // go left
+        if(code == 97){
+            left = !left;
+            right = false;
+        }
+        // stop
+        if(code == 120){
+            left = false;
+            right = false;
+            up = false;
+            down = false;
+            back = false;
+            forward = false;
+            rotateXLeft = false;
+            rotateXRight = false;
+            rotateYLeft = false;
+            rotateYRight = false;
+            rotateZLeft = false;
+            rotateZRight = false;
+            camera.rotation.x = 0;
+            camera.rotation.y = 0;
+            camera.rotation.z = 0;
+            speed =1;
+        }
+// speed control
+        if(code == 45){
+            speed/=5;
+        }
+// speed control
+        if(code == 61){
+
+                speed*=5;
+        }
+
+        // forward
+        if(code == 101){
+            console.log(forward);
+            forward = !forward;
+            back = false;
+        }
+// backward
+        if(code == 113){
+            back = !back;
+            forward = false;
+        }
+
+// rotating in x,y,z
+        if(code == 107){
+            rotateYLeft = !rotateYLeft;
+            rotateYRight = false
+        }
+        if(code == 104){
+            rotateYRight = !rotateYRight;
+            rotateYLeft = false
+        }
+
+        if(code == 106){
+            rotateXLeft = !rotateXLeft;
+            rotateXRight = false
+        }
+        if(code == 117){
+            rotateXRight = !rotateXRight;
+            rotateXLeft = false
+        }
+
+        if(code == 109){
+            rotateZLeft = !rotateZLeft;
+            rotateZRight = false
+        }
+        if(code == 98){
+            rotateZRight = !rotateZRight;
+            rotateZLeft = false
+        }
+        console.log(code)
+    }
+
+    </script>
+
+<script type="application/x-glsl" id="stars-vertex">
+varying vec2 vUV;
+
+void main() {
+  vUV = uv;
+  vec4 pos = vec4(position, 1.0);
+  gl_Position = projectionMatrix * modelViewMatrix * pos;
+}
+</script>
+
+
+<script type="application/x-glsl" id="stars-fragment">
+uniform sampler2D texture;
+varying vec2 vUV;
+
+void main() {
+  vec4 sample = texture2D(texture, vUV);
+  gl_FragColor = vec4(sample.xyz, sample.w);
+}
+</script>
+
+</head>
+<body onLoad="onLoad();" style="">
+    <div id="container"
+        style="width:100%; height:100%; position:absolute;">
+    </div>
+</body>
+</html>
